@@ -1,9 +1,9 @@
 import requests
 import time
 import pandas as pd
+import re
 from datetime import datetime
 
-# GANTI DENGAN API KEY KAMU
 API_KEY = "YOUR_API_KEY"
 
 # List titik koordinat strategis di Dumai
@@ -41,12 +41,26 @@ DETAILS_API_URL = "https://maps.googleapis.com/maps/api/place/details/json"
 # Simpan hasil dalam list
 all_places = []
 
+# Fungsi untuk ekstrak kelurahan dan kecamatan
+def extract_kelurahan_kecamatan(address: str) -> tuple:
+    """
+    Ekstrak kelurahan dan kecamatan dari alamat tanpa mengubah format kelurahan.
+    """
+    match = re.search(r"\s*([\w\.]+\s*[A-Za-z\s]+?),\s*Kec\.\s*([A-Za-z\s]+)", address)
+    
+    if match:
+        kelurahan = match.group(1).strip()  # Ambil kelurahan tanpa modifikasi
+        kecamatan = match.group(2).strip()  # Ambil kecamatan tanpa "Kec."
+        return kelurahan, kecamatan
+
+    return None, None
+
 # Fungsi untuk request data dari Nearby Search API
 def fetch_places_nearby(lat, lng, place_type, next_page_token=None):
     params = {
         "location": f"{lat},{lng}",
-        "rankby": "distance",  # Ambil semua hasil tanpa batas radius
-        "type": place_type,  # Cari berdasarkan type
+        "rankby": "distance",
+        "type": place_type,
         "key": API_KEY
     }
     if next_page_token:
@@ -59,18 +73,23 @@ def fetch_places_nearby(lat, lng, place_type, next_page_token=None):
         for place in data["results"]:
             # Ambil detail tambahan dari Place Details API
             details = fetch_place_details(place["place_id"])
+            full_address = details.get("formatted_address", place.get("vicinity", ""))
+
+            # Ekstrak kelurahan dan kecamatan
+            kelurahan, kecamatan = extract_kelurahan_kecamatan(full_address)
 
             all_places.append({
                 "type": place_type,
+                "place_id": place.get("place_id", ""),
                 "name": place.get("name", ""),
-                "address": place.get("vicinity", ""),
-                "Types": ", ".join(place.get("types", [])),
+                "address": full_address,
+                "kelurahan": kelurahan,
+                "kecamatan": kecamatan,
                 "rating": place.get("rating", 0),
                 "total_reviews": place.get("user_ratings_total", 0),
                 "business_status": place.get("business_status", ""),
                 "phone": details.get("formatted_phone_number", ""),
                 "website": details.get("website", ""),
-                "place_id": place.get("place_id", ""),
                 "latitude": place["geometry"]["location"]["lat"],
                 "longitude": place["geometry"]["location"]["lng"]
             })
@@ -81,7 +100,7 @@ def fetch_places_nearby(lat, lng, place_type, next_page_token=None):
 def fetch_place_details(place_id):
     params = {
         "place_id": place_id,
-        "fields": "formatted_phone_number,website",
+        "fields": "formatted_phone_number,website,formatted_address",
         "key": API_KEY
     }
     response = requests.get(DETAILS_API_URL, params=params)
@@ -107,11 +126,11 @@ df = pd.DataFrame(all_places)
 tanggal = datetime.now().strftime("%Y-%m-%d")
 
 # Simpan ke Excel
-excel_filename = f"places_data_{tanggal}.xlsx"
+excel_filename = f"g_places_data_{tanggal}.xlsx"
 df.to_excel(excel_filename, index=False)
 
 # Simpan ke CSV
-csv_filename = f"places_data_{tanggal}.csv"
+csv_filename = f"g_places_data_{tanggal}.csv"
 df.to_csv(csv_filename, index=False, encoding="utf-8-sig")
 
 print(f"Data tempat berhasil disimpan ke '{excel_filename}' dan '{csv_filename}'.")
