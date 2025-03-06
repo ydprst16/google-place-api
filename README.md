@@ -1,7 +1,7 @@
 # Google Place API Data Scraper
 
 ## Description
-This project is a Python script that retrieves location data from various strategic points in Dumai using the **Google Places API**. The script collects information such as place name, address, subdistrict, district, rating, number of reviews, business status, phone number, and website.
+This project is a Python script that retrieves location data from various strategic points using the **Google Places API**. The script collects information such as place name, address, subdistrict, district, rating, number of reviews, business status, phone number, and website.
 
 ## Features
 - Fetch data from **Google Places API** based on location coordinates.
