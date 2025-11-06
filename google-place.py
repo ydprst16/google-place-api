@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 
 # GANTI DENGAN API KEY KAMU
-API_KEY = "YOUR_API_KEY"
+API_KEY = "YOUR_API_KEy"
 
 # List titik koordinat strategis di Dumai
 locations = [
